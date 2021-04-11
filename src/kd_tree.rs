@@ -1,5 +1,5 @@
 use core::cmp::Ordering;
-use core::ops::Index;
+use core::ops::{Index, RangeTo, RangeFrom};
 use super::inner::Axis;
 use super::inner::Axis::{Latitude, Longitude};
 use super::inner::Nearest;
@@ -61,13 +61,13 @@ fn build_recursive<T: Copy>(axis: Axis, items: &mut [Item<T>]) -> Node<T> {
         Node::new_area(items[0], Empty, Empty)
     } else {
         sort_by_axis(axis, items);
-        
-        let next_axis = axis.next();
-        let median_index = items.len() / 2;
-        let left = build_recursive(next_axis, &mut items[..median_index]);
-        let right = build_recursive(next_axis, &mut items[median_index + 1..]);
 
-        Node::new_area(items[median_index], left, right)
+        let (median, left_range, right_range) = split_in_halves(&items);
+        let next_axis = axis.next();
+        let left = build_recursive(next_axis, &mut items[left_range]);
+        let right = build_recursive(next_axis, &mut items[right_range]);
+
+        Node::new_area(median, left, right)
     }
 }
 
@@ -94,6 +94,15 @@ fn cmp_by_latitude_when_a_is_north_of_b_returns_greater() {
 
 fn cmp_by_longitude<T: Copy>(a: &Item<T>, b: &Item<T>) -> Ordering {
     a.point.longitude.partial_cmp(&b.point.longitude).unwrap()
+}
+
+fn split_in_halves<T: Copy>(items: &[Item<T>]) -> (Item<T>, RangeTo<usize>, RangeFrom<usize>) {
+    let median_index = items.len()/2;
+    let median = items[median_index];
+    let left_range = ..median_index;
+    let right_range = median_index + 1..;
+
+    (median, left_range, right_range)
 }
 
 #[test]
@@ -277,6 +286,54 @@ mod tests {
         assert!(actual.eq(vec!["bar", "baz", "foo", "qux"]));
     }
 
+    #[test]
+    #[should_panic]
+    fn split_in_halves_with_empty_panics() {
+        let items = Vec::<Item<&str>>::new();
+    
+        let (_median, _left_range, _right_range) = split_in_halves(&items);
+    }
+    
+    #[test]
+    fn split_in_halves_with_1_element_returns_median_0_left_0_right_0() {
+        let items = items![1.0, 20.0, "foo"];
+    
+        let (median, left_range, right_range) = split_in_halves(&items);
+
+        assert_eq!(median.value, "foo");
+        assert_eq!(items[left_range].len(), 0);
+        assert_eq!(items[right_range].len(), 0);
+    }
+    
+    #[test]
+    fn split_in_halves_with_4_elements_returns_median_2_left_2_right_1() {
+        let items = items![4.0, 3.0, "foo";
+                           2.0, 1.0, "bar";
+                           3.0, 2.0, "baz";
+                           1.0, 4.0, "qux"];
+    
+        let (median, left_range, right_range) = split_in_halves(&items);
+
+        assert_eq!(median.value, "baz");
+        assert_eq!(items[left_range].len(), 2);
+        assert_eq!(items[right_range].len(), 1);
+    }
+    
+    #[test]
+    fn split_in_halves_with_5_elements_returns_median_2_left_2_right_2() {
+        let items = items![4.0, 3.0, "foo";
+                           2.0, 1.0, "bar";
+                           3.0, 2.0, "baz";
+                           1.0, 4.0, "qux";
+                           6.0, 6.0, "bat"];
+    
+        let (median, left_range, right_range) = split_in_halves(&items);
+
+        assert_eq!(median.value, "baz");
+        assert_eq!(items[left_range].len(), 2);
+        assert_eq!(items[right_range].len(), 2);
+    }
+    
     #[test]
     fn upsert_recursive_with_empty_changes_item_to_area() {
         let mut node = Node::<&str>::Empty;

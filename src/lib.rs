@@ -1,2 +1,7 @@
+extern crate approx;
+
 pub mod geo;
-pub mod rtree;
+
+mod inner;
+
+pub mod kd_tree;

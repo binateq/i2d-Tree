@@ -1,4 +1,7 @@
-use super::tree::Item;
+use std::ops::Index;
+use super::Item;
+use super::Node;
+use super::Point;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Axis {
@@ -85,4 +88,48 @@ fn nearest_min_with_farer_second_returns_first() {
     let actual = first.min(farer_second);
 
     assert_eq!(actual.item.value, "foo");
+}
+
+impl Node<&str> {
+    pub fn value(&self) -> Option<&str> {
+        match self {
+            Node::Empty => None,
+            Node::Area { item : Item { value, .. }, .. } => Some(*value),
+        }
+    }
+
+    pub fn left(&self) -> Option<&Node<&str>> {
+        match self {
+            Node::Empty => None,
+            Node::Area { left, .. } if **left == Node::Empty => None,
+            Node::Area { left, .. } => Some(left),
+        }
+    }
+
+    pub fn right(&self) -> Option<&Node<&str>> {
+        match self {
+            Node::Empty => None,
+            Node::Area { right, .. } if **right == Node::Empty => None,
+            Node::Area { right, .. } => Some(right),
+        }
+    }
+}
+
+impl Index<Axis> for Point {
+    type Output = f64;
+    
+    fn index(&self, axis: Axis) -> &<Self as std::ops::Index<Axis>>::Output {
+        match axis {
+            Latitude => &self.latitude,
+            Longitude => &self.longitude,
+        }
+    }
+}
+
+#[test]
+fn point_index_returns_valid_components() {
+    let point = Point::new(1.0, 20.0);
+
+    assert_eq!(point[Latitude], 1.0);
+    assert_eq!(point[Longitude], 20.0);
 }

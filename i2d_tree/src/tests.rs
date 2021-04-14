@@ -1,13 +1,10 @@
-#[derive(Copy, Clone, Debug)]
-pub struct Point {
-    pub latitude: f64,
-    pub longitude: f64,
-}
+use super::Point;
+use super::Item;
 
-impl Point {
-    pub fn new (latitude: f64, longitude: f64) -> Point {
-        Point { latitude, longitude }
-    }
+macro_rules! items {
+    ( $( $latitude: expr, $longitude: expr, $value: expr );* ) => {
+        <[_]>::into_vec(Box::new([ $(Item::new($latitude, $longitude, $value)),* ]))
+    };
 }
 
 #[test]
@@ -18,12 +15,6 @@ fn point_new_fill_fields() {
     assert_eq!(point.longitude, 200.0);
 }
 
-impl PartialEq for Point {
-    fn eq(&self, other: &Self) -> bool {
-        self.latitude == other.latitude && self.longitude == other.longitude
-    }
-}
-
 #[test]
 fn point_eq_checks_for_equality() {
     let point = Point::new(1.0, 20.0);
@@ -32,4 +23,12 @@ fn point_eq_checks_for_equality() {
 
     assert!(point == same);
     assert!(point != different);
+}
+
+#[test]
+fn item_new_fills_fields() {
+    let item = Item::new(1.0, 20.0, "foo");
+
+    assert_eq!(item.point, Point::new(1.0, 20.0));
+    assert_eq!(item.value, "foo");
 }

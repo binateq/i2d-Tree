@@ -4,7 +4,7 @@ extern crate i2d_tree;
 use std::io::stdin;
 use clap::{Arg, App};
 
-fn main() {
+fn main() -> i32 {
     let matches = App::new("geoloc integration tests")
                       .version("0.1.0")
                       .author("Mark Shevchenko")
@@ -17,9 +17,15 @@ fn main() {
     let command = matches.value_of("command")
                          .unwrap_or("help");
 
-    match command {
+    let result = match command {
         "print" => print(),
         "help" | _ => help(),
+    }
+
+    match result {
+        Result=> 0,
+        Err(E) => println!("Error: {}", E)
+            -1,
     }
 }
 

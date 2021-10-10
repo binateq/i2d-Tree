@@ -32,8 +32,8 @@ fn point_eq_checks_for_equality() {
     let same = Point::new(1.0, 20.0);
     let different = Point::new(2.0, 10.0);
 
-    assert!(point == same);
-    assert!(point != different);
+    assert_eq!(point, same);
+    assert_ne!(point, different);
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
